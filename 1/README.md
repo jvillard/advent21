@@ -1,1 +1,1 @@
-to run: `ocaml solution.ml`
+To run: `ocaml solution.ml`.
