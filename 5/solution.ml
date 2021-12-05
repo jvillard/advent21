@@ -18,39 +18,52 @@ let bump matrix (x, y) = matrix.(x).(y) <- matrix.(x).(y) + 1
 
 let sort_pair pair = match pair with x, y when x > y -> (y, x) | _ -> pair
 
-let draw_vertical ocean ~x ~ys vent =
+let draw_vertical ocean ~x ~ys =
   let y1, y2 = sort_pair ys in
   for y = y1 to y2 do
     bump ocean (x, y)
   done
 
-let draw_horizontal ocean ~y ~xs vent =
+let draw_horizontal ocean ~y ~xs =
   let x1, x2 = sort_pair xs in
   for x = x1 to x2 do
     bump ocean (x, y)
   done
 
-let draw_line ocean vent =
+let draw_diagonal ocean (x0, y0) length direction =
+  let y_offset i =
+    let sign = match direction with `Up -> 1 | `Down -> -1 in
+    sign * i
+  in
+  for i = 0 to length do
+    bump ocean (x0 + i, y0 + y_offset i)
+  done
+
+let draw_line part ocean vent =
   let {from= from_x, from_y; to_= to_x, to_y} = vent in
   if from_x = to_x || from_y = to_y then
-    if from_x = to_x then draw_vertical ocean ~x:from_x ~ys:(from_y, to_y) vent
-    else draw_horizontal ocean ~y:from_y ~xs:(from_x, to_x) vent
+    if from_x = to_x then draw_vertical ocean ~x:from_x ~ys:(from_y, to_y)
+    else draw_horizontal ocean ~y:from_y ~xs:(from_x, to_x)
+  else if part = `Part2 then
+    let from, to_ = if to_x > from_x then (vent.from, vent.to_) else (vent.to_, vent.from) in
+    let direction = if snd to_ > snd from then `Up else `Down in
+    draw_diagonal ocean from (fst to_ - fst from) direction
 
-let draw_all ocean vents = List.iter (fun vent -> draw_line ocean vent) vents
+let draw_all part ocean vents = List.iter (fun vent -> draw_line part ocean vent) vents
 
 let count_at_least_two ocean =
   let count = ref 0 in
   Array.iter (fun col -> Array.iter (fun n -> if n >= 2 then incr count) col) ocean ;
   !count
 
-let main ~max_coord vents =
+let main part ~max_coord vents =
   let ocean = mk_ocean ~max_coord in
-  draw_all ocean vents ;
+  draw_all part ocean vents ;
   let count = count_at_least_two ocean in
   Format.printf "solution= %d@." count ;
   ()
 
-let () = main ~max_coord:(10, 10) example
+let () = main `Part1 ~max_coord:(10, 10) example
 
 let input =
   [ {from= (503, 977); to_= (843, 637)}
@@ -554,4 +567,8 @@ let input =
   ; {from= (886, 616); to_= (841, 616)}
   ; {from= (375, 503); to_= (375, 387)} ]
 
-let () = main ~max_coord:(1000, 1000) input
+let () = main `Part1 ~max_coord:(1000, 1000) input
+
+let () = main `Part2 ~max_coord:(10, 10) example
+
+let () = main `Part2 ~max_coord:(1000, 1000) input
